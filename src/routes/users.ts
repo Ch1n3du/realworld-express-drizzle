@@ -1,15 +1,13 @@
 // /api/users routes
 import { Router } from "express";
+import { loginUser, registerUser } from "../controllers/users";
 
 const usersRouter = Router();
-const todo = async () => "TODO";
 
 // Authentication
-// POST /api/users/login
-usersRouter.post("/login", todo);
+usersRouter.post("/login", loginUser);
 
 // Registration
-// POST /api/users/
-usersRouter.post("", todo);
+usersRouter.post("/", registerUser);
 
 export default usersRouter;

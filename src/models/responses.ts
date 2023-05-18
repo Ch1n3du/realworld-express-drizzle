@@ -1,27 +1,26 @@
-type User = {
+export type User = {
     username: string,
     email: string,
     token: string,
     bio: string
-    image: string
-    following: boolean
+    image: string | null,
 }
 
-type Profile = {
-    username: string,
-    bio: string,
-    image: string,
-    following: boolean 
-}
-
-type Author = {
+export type Profile = {
     username: string,
     bio: string,
     image: string,
     following: boolean
 }
 
-type Article = {
+export type Author = {
+    username: string,
+    bio: string,
+    image: string,
+    following: boolean
+}
+
+export type Article = {
     slug: string,
     title: string,
     description: string,
@@ -33,12 +32,12 @@ type Article = {
     author: Author,
 }
 
-type MultipleArticles = {
+export type MultipleArticles = {
     articlesCount: number,
     articles: Article[],
 }
 
-type Comment = {
+export type Comment = {
     id: number,
     createdAt: string,
     updatedAt: string,

@@ -1,6 +1,27 @@
+
 import { PrismaClient } from "@prisma/client";
-import { unauthorizedError } from "../utils/errors";
-import * as responses from "./responses"
+export interface User {
+    username: string,
+    email: string,
+    token: string,
+    bio: string
+    image: string | null,
+}
+
+type UserResponse = { user: User };
+
+export function createUserResponse(args: User): UserResponse {
+    return { user: args }
+}
+
+export const SelectUser = {
+    username: true,
+    email: true,
+    bio: true,
+    image: true
+}
+
+export const SelectUserWithPassword = { password: true, ...SelectUser }
 
 export async function createUser(
     prisma: PrismaClient,
@@ -8,22 +29,18 @@ export async function createUser(
     email: string,
     password: Buffer,
     token: string
-): Promise<responses.User> {
-    const user = await prisma.user.create({
-        data: {
-            username,
-            email,
-            password
-        }
-    });
+): Promise<User> {
+    const user = await prisma.user
+        .create({ data: { username, email, password }, select: SelectUser })
 
-    let userResponse: responses.User = {
+    let userResponse: User = {
         username: user.username,
         email: user.email,
         token: token,
         bio: user.bio || "",
         image: user.image
-    };
+    }
 
     return userResponse
 }
+

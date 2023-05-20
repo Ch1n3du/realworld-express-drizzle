@@ -1,16 +1,15 @@
-export type User = {
-    username: string,
-    email: string,
-    token: string,
-    bio: string
-    image: string | null,
-}
-
 export type Profile = {
     username: string,
     bio: string,
     image: string,
     following: boolean
+}
+
+export const SelectProfile = {
+    username: true,
+    bio: true,
+    image: true,
+    following: true
 }
 
 export type Author = {

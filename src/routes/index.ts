@@ -2,8 +2,8 @@ import { Router } from "express";
 import { expressjwt } from "express-jwt";
 import dotenv from "dotenv";
 
-import userRouter from "./user";
-import usersRouter from "./users";
+import userRouter from "./user.route";
+import usersRouter from "./users.route";
 import profileRouter from "./profile";
 import articlesRouter from "./articles";
 import tagsRouter from "./tags";
@@ -21,7 +21,7 @@ router.use("/tags", tagsRouter)
 
 router.use(
     expressjwt({
-        secret: JWT_SECRET!,
+        secret: JWT_SECRET,
         algorithms: ["HS256"],
 
     }).unless({

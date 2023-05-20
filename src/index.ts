@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 
 import router from "./routes";
 import { jwtErrorHandler } from "./middleware/jwt_error_handler";
-import prismaErrorHandler from "./middleware/prisma_error_handler";
 
 dotenv.config();
 const PORT = process.env.PORT;
@@ -11,7 +10,6 @@ const PORT = process.env.PORT;
 const app: Express = express();
 app.use(express.json());
 app.use(jwtErrorHandler);
-app.use(prismaErrorHandler);
 app.use("/api", router);
 
 app.listen(PORT, () => {

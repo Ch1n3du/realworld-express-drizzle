@@ -11,7 +11,11 @@ export async function insertUser(
 ) {
     try {
      let rows = await db.insert(users)
-        .values({username, email})
+        .values({
+            username: username,
+            email: email,
+            password: password,
+        })
         .returning({
             username: users.username,
             email: users.email,
@@ -63,7 +67,8 @@ export async function getUserByEmail(email: string) {
 export async function getUserPassword(email: string): Promise<string | null> {
     let rows = await db.select({
         password: users.password
-    }).from(users);
+    }).from(users)
+    .where(eq(users.email, email));
     if (rows.length === 0) {
         return null;
     } else {

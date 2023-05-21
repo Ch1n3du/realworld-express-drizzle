@@ -11,14 +11,14 @@ export async function registerUser(req: Request, res: Response, next: NextFuncti
     let {username, email, password} = reqBody.user;
 
     let emailExists = await getUserByEmail(email);
-    if (emailExists === null) {
-        validationError(res, "Email is already in use");
+    if (emailExists !== null) {
+        validationError(res, `Email '${email}' is already in use`);
         return;
     }
 
     let usernameExists = await getUserByUsername(username);
-    if (usernameExists) {
-        validationError(res, "Username is already in use");
+    if (usernameExists !== null) {
+        validationError(res, `Username '${username}' is already in use`);
         return;
     }
 
@@ -40,7 +40,7 @@ export async function loginUser(req: Request, res: Response) {
     let dbPassword = await getUserPassword(email);
 
     if (dbPassword === null) {
-        validationError(res, "Email is not in use.")
+        validationError(res, `Email '${email}' is not in use.`)
         return;
     }
 

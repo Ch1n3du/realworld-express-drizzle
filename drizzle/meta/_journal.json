@@ -1,0 +1,27 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1684623918743,
+      "tag": "0000_complex_mother_askani",
+      "breakpoints": false
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1684688107809,
+      "tag": "0001_cloudy_rhodey",
+      "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1684688454546,
+      "tag": "0002_cultured_genesis",
+      "breakpoints": false
+    }
+  ]
+}

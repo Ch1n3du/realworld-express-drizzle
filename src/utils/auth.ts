@@ -1,5 +1,6 @@
 import * as bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import { Request, Response } from "express";
 import * as jwt from "jsonwebtoken";
 
 dotenv.config();
@@ -28,3 +29,20 @@ export function generateAccessToken(username: string) {
 
     return jwt.sign(username, SECRET);
 }
+
+export function extractAccesToken(response: Request): string {
+    let authHeader: string = response.headers.authorization!;
+    let token: string = authHeader.split(" ")[1];
+
+    return token;
+}
+
+export function decodeAccesToken(token: string): string | null {
+    let decodeResult = jwt.decode(token);
+    if (decodeResult === null) {
+        return null;
+    } else {
+        return decodeResult as string
+    }
+}
+

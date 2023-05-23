@@ -2,13 +2,13 @@ import { NextFunction, Request, Response } from "express";
 
 import { validationError } from "../utils/errors";
 import { checkPassword, generateAccessToken, hashPassword } from "../utils/auth";
-import { LoginRequest, RegisterUserRequest } from "../models/requests/users.request";
-import { getUserByEmail, getUserByUsername, getUserPassword, insertUser } from "../db/users.schema";
+import { LoginRequest, RegisterUserRequest } from "../requests/users.request";
+import { getUserByEmail, getUserByUsername, getUserPassword, insertUser } from "../db/user";
 
 
 export async function registerUser(req: Request, res: Response, next: NextFunction) {
     let reqBody: RegisterUserRequest = req.body;
-    let {username, email, password} = reqBody.user;
+    let { username, email, password } = reqBody.user;
 
     let emailExists = await getUserByEmail(email);
     if (emailExists !== null) {
@@ -28,12 +28,12 @@ export async function registerUser(req: Request, res: Response, next: NextFuncti
     let user = await insertUser(username, email, hashedPassword.toString());
 
     return res.status(200).json({
-        user: {token: token, ...user }
+        user: { token: token, ...user }
     });
 }
 
 export async function loginUser(req: Request, res: Response) {
-    let reqBody: LoginRequest= req.body;
+    let reqBody: LoginRequest = req.body;
     let { email, password } = reqBody.user;
 
 

@@ -1,10 +1,13 @@
 import { Router } from "express";
+import { getCurrentUser, updateUser } from "../controllers/user.controller";
+import { validateRequest } from "zod-express-middleware";
+import { UpdateUserSchema } from "../requests/user.request";
 
 const userRouter = Router();
-const todo = async () => "TODO";
 
-userRouter.get("/", todo);
+// Get current user
+userRouter.get("/", getCurrentUser);
 
-userRouter.put("/", todo);
+userRouter.put("/", validateRequest({ body: UpdateUserSchema }), updateUser);
 
 export default userRouter;

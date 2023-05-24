@@ -22,6 +22,13 @@
       "when": 1684688454546,
       "tag": "0002_cultured_genesis",
       "breakpoints": false
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1684928589074,
+      "tag": "0003_brainy_omega_red",
+      "breakpoints": false
     }
   ]
 }

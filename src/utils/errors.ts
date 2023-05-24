@@ -10,6 +10,11 @@ const formatError = (message: string) => {
     }
 }
 
+export enum ErrorMessage {
+    JWT_PARSE_ERROR = "Error parsing JWT",
+    PROFILE_NOT_FOUND = "Profile not found",
+}
+
 enum StatusCode {
     Ok = 200,
 }

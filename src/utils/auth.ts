@@ -1,7 +1,7 @@
 import * as bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import * as jwt from "jsonwebtoken";
+import { decode, sign, SignOptions } from "jsonwebtoken";
 
 dotenv.config();
 
@@ -23,11 +23,11 @@ export function generateAccessToken(username: string) {
     dotenv.config();
     const SECRET: string = process.env.JWT_SECRET!;
 
-    const options: jwt.SignOptions = {
+    const options: SignOptions = {
         expiresIn: "1800s"
     };
 
-    return jwt.sign(username, SECRET);
+    return sign(username, SECRET);
 }
 
 export function extractAccesToken(response: Request): string {
@@ -38,7 +38,7 @@ export function extractAccesToken(response: Request): string {
 }
 
 export function decodeAccesToken(token: string): string | null {
-    let decodeResult = jwt.decode(token);
+    let decodeResult = decode(token);
     if (decodeResult === null) {
         return null;
     } else {

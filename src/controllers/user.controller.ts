@@ -13,7 +13,7 @@ export async function getCurrentUser(req: Request, res: Response) {
   }
   let username: string = decodeResult!;
 
-  let searchResult = db.getUserByUsername(username);
+  let searchResult = await db.getUserByUsername(username);
   if (searchResult === null) {
     validationError(res, `Username '${username}' is not in use`);
     return;

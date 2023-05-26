@@ -1,10 +1,13 @@
 import { Router } from "express";
+import { listArticlesController } from "../controllers/articles.controller";
 
 const articlesRouter = Router();
 const todo = async () => "TODO";
-    
-articlesRouter.get("/", todo);
 
+// List articles
+articlesRouter.get("/", listArticlesController);
+
+// Feed Articles
 articlesRouter.get("/feed", todo)
 
 // Get article

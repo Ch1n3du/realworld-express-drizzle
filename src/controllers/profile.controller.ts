@@ -20,7 +20,9 @@ export async function getProfileController(req: Request, res: Response) {
     }
     let profile: Profile = dbResult!;
 
-    res.status(200).json(profile);
+    res.status(200).json({
+        profile: profile
+    });
 }
 
 
@@ -40,6 +42,10 @@ export async function followUserController(req: Request, res: Response) {
         return;
     }
     let profile: Profile = dbResult!;
+
+    res.status(200).json({
+        profile: profile
+    });
 }
 
 export async function unfollowUserController(req: Request, res: Response) {
@@ -58,4 +64,8 @@ export async function unfollowUserController(req: Request, res: Response) {
         return;
     }
     let profile: Profile = dbResult!;
+
+    res.status(200).json({
+        profile: profile
+    });
 }

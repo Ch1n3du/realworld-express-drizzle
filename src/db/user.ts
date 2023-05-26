@@ -1,4 +1,3 @@
-import { pgTable, serial, text, date } from "drizzle-orm/pg-core";
 import { db } from ".";
 import { eq } from "drizzle-orm";
 import { users } from "./schema";
@@ -79,16 +78,16 @@ export async function getUserPassword(email: string): Promise<string | null> {
     }
 }
 
-type UpdateArgs = {
-    username?: string,
-    email?: string,
-    bio?: string,
-    image?: string
-}
 
 export async function updateUser(
     username: string,
-    args: UpdateArgs
+    args: {
+
+        username?: string,
+        email?: string,
+        bio?: string,
+        image?: string
+    }
 ) {
     let user = await db
         .update(users)

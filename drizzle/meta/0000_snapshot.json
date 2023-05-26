@@ -1,16 +1,208 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "63a74443-ee2f-4d9f-b26d-2011df5d2b53",
+  "id": "e76c426b-1be7-4ea6-a4a7-b8222f7ef272",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "article_to_tag": {
+      "name": "article_to_tag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "articleId": {
+          "name": "articleId",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "article_to_tag_articleId_articles_id_fk": {
+          "name": "article_to_tag_articleId_articles_id_fk",
+          "tableFrom": "article_to_tag",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "articleId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {}
+    },
+    "articles": {
+      "name": "articles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "articles_author_users_username_fk": {
+          "name": "articles_author_users_username_fk",
+          "tableFrom": "articles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author"
+          ],
+          "columnsTo": [
+            "username"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {}
+    },
+    "comments": {
+      "name": "comments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "articleId": {
+          "name": "articleId",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "comments_articleId_articles_id_fk": {
+          "name": "comments_articleId_articles_id_fk",
+          "tableFrom": "comments",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "articleId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {}
+    },
+    "followings": {
+      "name": "followings",
+      "schema": "",
+      "columns": {
+        "followerId": {
+          "name": "followerId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "followedId": {
+          "name": "followedId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {}
+    },
+    "tags": {
+      "name": "tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tagName": {
+          "name": "tagName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {}
+    },
     "users": {
       "name": "users",
       "schema": "",
       "columns": {
         "username": {
           "name": "username",
-          "type": "text",
+          "type": "integer",
           "primaryKey": true,
           "notNull": true
         },
@@ -24,7 +216,7 @@
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "image": {
           "name": "image",
@@ -32,17 +224,17 @@
           "primaryKey": false,
           "notNull": false
         },
-        "pasword": {
-          "name": "pasword",
+        "password": {
+          "name": "password",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "createdAt": {
           "name": "createdAt",
           "type": "date",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         }
       },

@@ -1,21 +1,23 @@
 import { Request, Response } from "express";
-import { decodeAccesToken, extractAccesToken } from "../utils/auth";
-import { validationError } from "../utils/errors";
+import { TypeOf, z } from "zod";
+
+import * as auth from "../utils/auth";
+import * as errors from "../utils/errors";
 import * as db from "../db/user";
-import { UpdateUser } from "../requests/user.request";
 
 export async function getCurrentUser(req: Request, res: Response) {
-  let token: string = extractAccesToken(req);
-  let decodeResult: string | null = decodeAccesToken(token);
+  let token: string = auth.extractAccesToken(req);
+
+  let decodeResult: string | null = auth.decodeAccesToken(token);
   if (decodeResult === null) {
-    validationError(res, "Error decoding JWT");
+    errors.validationError(res, "Error decoding JWT");
     return;
   }
   let username: string = decodeResult!;
 
   let searchResult = await db.getUserByUsername(username);
   if (searchResult === null) {
-    validationError(res, `Username '${username}' is not in use`);
+    errors.validationError(res, `Username '${username}' is not in use`);
     return;
   }
 
@@ -23,11 +25,23 @@ export async function getCurrentUser(req: Request, res: Response) {
   res.status(200).send({ token, ...user })
 }
 
+export const UpdateUserSchema = z.object({
+  user: z.object({
+    username: z.string().optional(),
+    password: z.string().optional(),
+    email: z.string().email().optional(),
+    bio: z.string().optional(),
+    image: z.string().url().optional(),
+  })
+})
+
+type UpdateUser = TypeOf<typeof UpdateUserSchema>
+
 export async function updateUser(req: Request, res: Response) {
-  let token: string = extractAccesToken(req);
-  let decodeResult: string | null = decodeAccesToken(token);
+  let token: string = auth.extractAccesToken(req);
+  let decodeResult: string | null = auth.decodeAccesToken(token);
   if (decodeResult === null) {
-    validationError(res, "Error decoding JWT");
+    errors.validationError(res, "Error decoding JWT");
     return;
   }
   let username: string = decodeResult!;

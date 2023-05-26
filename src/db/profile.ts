@@ -27,10 +27,10 @@ export async function getProfile(searcherUsername: string, targetUsername: strin
     })
         .from(followers)
         .where(and(
-            eq(followers.followerId, searcherUsername),
-            eq(followers.followedId, targetUsername)
+            eq(followers.followerUsername, searcherUsername),
+            eq(followers.followedUsername, targetUsername)
         ));
-    let following = followingRows.length === 0;
+    let following = followingRows.length > 0;
 
     return { following: following, ...user }
 }
@@ -38,7 +38,7 @@ export async function getProfile(searcherUsername: string, targetUsername: strin
 export async function followUser(username: string, targetUsername: string) {
     await db
         .insert(followers)
-        .values({ followerId: username, followedId: targetUsername })
+        .values({ followerUsername: username, followedUsername: targetUsername })
         .onConflictDoNothing();
 
     return getProfile(username, targetUsername);
@@ -48,8 +48,8 @@ export async function unfollowUser(username: string, targetUsername: string): Pr
     await db
         .delete(followers)
         .where(and(
-            eq(followers.followerId, username),
-            eq(followers.followedId, targetUsername)
+            eq(followers.followerUsername, username),
+            eq(followers.followedUsername, targetUsername)
         ));
 
     return getProfile(username, targetUsername);

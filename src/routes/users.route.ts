@@ -1,8 +1,7 @@
 // /api/users routes
 import { Router } from "express";
-import { loginUser, registerUser } from "../controllers/users.controller";
+import { loginUser, LoginSchema, registerUser, RegisterUserSchema } from "../controllers/users.controller";
 import { validateRequest } from "zod-express-middleware";
-import { LoginSchema, RegisterUserSchema } from "../requests/users.request";
 
 const usersRouter = Router();
 

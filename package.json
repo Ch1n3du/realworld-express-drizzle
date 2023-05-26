@@ -22,6 +22,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/morgan": "^1.9.4",
     "@types/pg": "^8.6.6",
+    "@types/slug": "^5.0.3",
     "bcrypt": "^5.1.0",
     "dotenv": "^16.0.3",
     "drizzle-orm": "^0.26.0",
@@ -30,6 +31,7 @@
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
     "postgres": "^3.3.4",
+    "slug": "^8.2.2",
     "zod": "^3.21.4",
     "zod-express-middleware": "^1.4.0"
   },

@@ -1,7 +1,7 @@
 import { and, eq, not } from "drizzle-orm";
 import { number, string, TypeOf, z } from "zod";
 import { db } from ".";
-import { articles, article_to_tag, authorCommentsRelations, comments, favorited_articles, followers, users } from "./schema";
+import { articles, article_to_tag, authorCommentsRelations, comments, favorited_articles, followers, tags, users } from "./schema";
 
 import slug from "slug";
 
@@ -124,17 +124,163 @@ export async function deleteArticle(articleSlug: string, searcherUsername: strin
         .delete(articles)
         .where(eq(articles.slug, articleSlug));
 
+    await deleteCommentsFromArticle(articleSlug);
+
     return getArticle(articleSlug, searcherUsername);
 }
 
-export async function addComment(
-    username: string,
-    articleSlug: string,
-    commentBody: string
-) {
-
-    await db.select().from(comments)
+type Comment = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    body: string,
+    author: Author
 }
+
+export async function getComment(
+    articleSlug: string,
+    commentId: number,
+    searcherUsername: string,
+): Promise<Comment | null> {
+    let commentInfoRows = await db
+        .select({
+            id: comments.comment_id,
+            createdAt: comments.created_at,
+            updatedAt: comments.updated_at,
+            body: comments.body,
+            //! Change field later
+            author: comments.comment_author
+        })
+        .from(comments)
+        .where(and(
+            eq(comments.article_slug, articleSlug),
+            eq(comments.comment_id, commentId)));
+    if (commentInfoRows.length === 0) {
+        return null;
+    }
+    let commentInfo = commentInfoRows[0]
+
+    let author = await getAuthorInfo(searcherUsername, commentInfo.author);
+    if (author === null) {
+        return null;
+    }
+
+    return { ...commentInfo, author: author! }
+}
+
+
+
+export async function getCommentsForArticle(
+    articleSlug: string,
+    searcherUsername: string,
+): Promise<Comment[] | null> {
+    let commentInfoRows = await db
+        .select({
+            id: comments.comment_id,
+            createdAt: comments.created_at,
+            updatedAt: comments.updated_at,
+            body: comments.body,
+            //! Change field later
+            author: comments.comment_author
+        })
+        .from(comments)
+        .where(eq(comments.article_slug, articleSlug));
+    if (commentInfoRows.length === 0) {
+        return null;
+    }
+    let formattedComments = [];
+
+    for (const [index, comment] of commentInfoRows.entries()) {
+        let author = await getAuthorInfo(searcherUsername, comment.author);
+        if (author === null) {
+            return null;
+        }
+
+        formattedComments[index] = { ...comment, author: author! }
+    };
+
+    return formattedComments
+}
+
+
+export async function addCommentToArticle(
+    commentAuthor: string,
+    articleSlug: string,
+    commentBody: string,
+): Promise<Comment | null> {
+    try {
+
+        let res = await db
+            .insert(comments)
+            .values({
+                comment_author: commentAuthor,
+                article_slug: articleSlug,
+                body: commentBody
+            })
+            .returning({
+                id: comments.comment_id,
+            });
+        let id: number = res[0].id;
+
+        return getComment(articleSlug, id, commentAuthor);
+    } catch (_) {
+        return null;
+    }
+}
+
+export async function deleteComment(articleSlug: string, commentId: number) {
+    await db
+        .delete(comments)
+        .where(and(
+            eq(comments.comment_id, commentId),
+            eq(comments.article_slug, articleSlug),
+        )
+        );
+}
+
+async function deleteCommentsFromArticle(articleSlug: string) {
+    await db
+        .delete(comments)
+        .where(eq(comments.article_slug, articleSlug));
+}
+
+export async function favoriteArticle(
+    articleSlug: string,
+    username: string,
+): Promise<Article | null> {
+    await db.insert(favorited_articles)
+        .values({
+            article_slug: articleSlug,
+            username: username,
+        });
+
+    return getArticle(articleSlug, username)
+}
+
+export async function unfavoriteArticle(
+    articleSlug: string,
+    username: string,
+): Promise<Article | null> {
+    db.delete(favorited_articles)
+        .where(and(
+            eq(favorited_articles.article_slug, articleSlug),
+            eq(favorited_articles.username, username),
+        )
+        );
+
+    return getArticle(articleSlug, username)
+}
+
+export async function getTags(): Promise<string[]> {
+    let rawTags = await db
+        .select({ tagName: tags.tag_name })
+        .from(tags);
+
+    return rawTags.map(({ tagName }) => tagName)
+}
+
+
+
 
 const isUndefined = (value: any) => value === undefined;
 export async function listArticles(queryParams: ListArticleParams) {
@@ -243,3 +389,32 @@ async function getFavoriteInfo(articleSlug: string, username: string) {
     return { favorited, favoritesCount };
 }
 
+export async function getArticleAuthor(articleSlug: string): Promise<string | null> {
+    let authorRows = await db
+        .select({ author: articles.author })
+        .from(articles)
+        .where(eq(articles.slug, articleSlug));
+
+    if (authorRows.length === 0) {
+        return null;
+    }
+
+    return authorRows[0].author
+}
+
+export async function getCommentAuthor(articleSlug: string, commentId: number) {
+    let authorRows = await db
+        .select({ author: comments.comment_author })
+        .from(comments)
+        .where(and(
+            eq(comments.article_slug, articleSlug),
+            eq(comments.comment_id, commentId)
+        )
+        );
+
+    if (authorRows.length === 0) {
+        return null;
+    }
+
+    return authorRows[0].author
+}

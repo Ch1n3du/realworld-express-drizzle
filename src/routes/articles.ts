@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { listArticlesController } from "../controllers/articles.controller";
+import { validateRequest } from "zod-express-middleware";
+import { AddCommentSchema, addCommentToArticleController, createArticleController, CreateArticleSchema, deleteArticleController, deleteComment, deleteCommentController, favoriteArticleController, getArticleController, getCommentsFromArticleController, listArticlesController, unfavoriteArticleController, updateArticleController, UpdateArticleSchema } from "../controllers/articles.controller";
 
 const articlesRouter = Router();
 const todo = async () => "TODO";
@@ -11,38 +12,65 @@ articlesRouter.get("/", listArticlesController);
 articlesRouter.get("/feed", todo)
 
 // Get article
-articlesRouter.get("/:slug", todo)
+articlesRouter.get("/:slug", getArticleController)
 
 //! Auth required
 // Create article
-articlesRouter.post("/", todo)
+articlesRouter.post(
+    "/",
+    validateRequest({ body: CreateArticleSchema }),
+    createArticleController
+);
 
 //! Auth
 // Update Article
-articlesRouter.put("/:slug", todo)
+articlesRouter.put(
+    "/:slug",
+    validateRequest({ body: UpdateArticleSchema }),
+    updateArticleController,
+);
 
 //! Auth
 // Delete Article
-articlesRouter.delete("/:slug", todo)
+articlesRouter.delete(
+    "/:slug",
+    deleteArticleController,
+);
 
 //! Auth
 // Add Comments to an Article
-articlesRouter.post("/:slug/comments", todo)
+articlesRouter.post(
+    "/:slug/comments",
+    validateRequest({ body: AddCommentSchema }),
+    addCommentToArticleController,
+);
 
 //! Auth
 // Get Comments from an Article
-articlesRouter.get("/:slug/comments", todo)
+articlesRouter.get(
+    "/:slug/comments",
+    getCommentsFromArticleController,
+);
 
 //! Auth
 // Delete comment
-articlesRouter.delete("/:slug/comments/:id", todo)
+articlesRouter.delete(
+    "/:slug/comments/:id",
+    deleteCommentController,
+);
 
 //! Auth
 // Favourite article
-articlesRouter.post("/:slug/favorite", todo)
+articlesRouter.post(
+    "/:slug/favorite",
+    favoriteArticleController,
+);
 
 //! Auth
 // Unfavourite Article
-articlesRouter.delete("/:slug/favorite")
+articlesRouter.delete(
+    "/:slug/favorite",
+    unfavoriteArticleController
+);
 
 export default articlesRouter;

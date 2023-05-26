@@ -7,7 +7,6 @@ import * as db from "../db/user";
 
 export async function getCurrentUser(req: Request, res: Response) {
   let token: string = auth.extractAccesToken(req);
-
   let decodeResult: string | null = auth.decodeAccesToken(token);
   if (decodeResult === null) {
     errors.validationError(res, "Error decoding JWT");

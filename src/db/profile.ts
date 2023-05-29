@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "."
 import { followers, users } from "./schema"
+import { getUserIdFromUsername } from "./user";
 
 export type Profile = {
     username: string,
@@ -23,12 +24,15 @@ export async function getProfile(searcherUsername: string, targetUsername: strin
     }
     let user = userRows[0];
 
+    let searcherUserId: string = (await getUserIdFromUsername(searcherUsername))!;
+    let targetUserId: string = (await getUserIdFromUsername(targetUsername))!;
+
     let followingRows = await db.select({
     })
         .from(followers)
         .where(and(
-            eq(followers.followerUsername, searcherUsername),
-            eq(followers.followedUsername, targetUsername)
+            eq(followers.follower_id, searcherUserId),
+            eq(followers.followed_id, targetUserId)
         ));
     let following = followingRows.length > 0;
 
@@ -36,20 +40,41 @@ export async function getProfile(searcherUsername: string, targetUsername: strin
 }
 
 export async function followUser(username: string, targetUsername: string) {
+    let searcherUserId: string | null = (await getUserIdFromUsername(username));
+    if (searcherUserId === null) {
+        return null;
+    }
+    let targetUserId: string | null = (await getUserIdFromUsername(targetUsername))!;
+    if (targetUserId === null) {
+        return null;
+    }
+
     await db
         .insert(followers)
-        .values({ followerUsername: username, followedUsername: targetUsername })
+        .values({
+            follower_id: searcherUserId!,
+            followed_id: targetUserId!
+        })
         .onConflictDoNothing();
 
     return getProfile(username, targetUsername);
 }
 
 export async function unfollowUser(username: string, targetUsername: string): Promise<Profile | null> {
+    let searcherUserId: string | null = (await getUserIdFromUsername(username));
+    if (searcherUserId === null) {
+        return null;
+    }
+    let targetUserId: string | null = (await getUserIdFromUsername(targetUsername))!;
+    if (targetUserId === null) {
+        return null;
+    }
+
     await db
         .delete(followers)
         .where(and(
-            eq(followers.followerUsername, username),
-            eq(followers.followedUsername, targetUsername)
+            eq(followers.follower_id, searcherUserId),
+            eq(followers.followed_id, targetUserId)
         ));
 
     return getProfile(username, targetUsername);

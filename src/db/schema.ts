@@ -2,7 +2,8 @@ import { relations } from "drizzle-orm";
 import { pgTable, text, date, serial, integer, uuid, timestamp } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
-    username: text("username").primaryKey(),
+    user_id: uuid("user_id").defaultRandom().primaryKey(),
+    username: text("username").notNull(),
     bio: text("bio"),
     email: text("email").notNull(),
     image: text("image"),
@@ -11,8 +12,8 @@ export const users = pgTable("users", {
 });
 
 export const followers = pgTable("followings", {
-    follower_username: text("follower_username").primaryKey().notNull(),
-    followed_username: text("followed_username").notNull()
+    follower_id: uuid("follower_id").primaryKey().notNull(),
+    followed_id: uuid("followed_username").notNull()
 })
 
 export const articles = pgTable("articles", {
@@ -28,7 +29,7 @@ export const articles = pgTable("articles", {
 export const favorited_articles = pgTable("favorited_articles", {
     id: uuid("id").defaultRandom().primaryKey(),
     article_slug: text("article_slug").references(() => articles.slug),
-    username: text("username").references(() => users.username)
+    user_id: uuid("user_id").references(() => users.username)
 });
 
 export const comments = pgTable("comments", {
@@ -37,7 +38,7 @@ export const comments = pgTable("comments", {
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
     body: text("body").notNull(),
-    comment_author: text("comment_author").notNull(),
+    comment_author_id: uuid("comment_author_id").notNull(),
 });
 
 export const tags = pgTable("tags", {
@@ -70,8 +71,8 @@ export const authorCommentsRelations = relations(articles, ({ many }) => ({
 }));
 export const commentAuthorRelations = relations(comments, ({ one }) => ({
     article: one(users, {
-        fields: [comments.comment_author],
-        references: [users.username],
+        fields: [comments.comment_author_id],
+        references: [users.user_id],
     })
 }));
 

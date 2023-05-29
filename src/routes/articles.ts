@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { validateRequest } from "zod-express-middleware";
-import { AddCommentSchema, addCommentToArticleController, createArticleController, CreateArticleSchema, deleteArticleController, deleteComment, deleteCommentController, favoriteArticleController, getArticleController, getCommentsFromArticleController, listArticlesController, unfavoriteArticleController, updateArticleController, UpdateArticleSchema } from "../controllers/articles.controller";
+import { AddCommentSchema, addCommentToArticleController, createArticleController, CreateArticleSchema, deleteArticleController, deleteCommentController, favoriteArticleController, getArticleController, getCommentsFromArticleController, unfavoriteArticleController, updateArticleController, UpdateArticleSchema } from "../controllers/articles.controller";
 
 const articlesRouter = Router();
 const todo = async () => "TODO";
 
 // List articles
-articlesRouter.get("/", listArticlesController);
+articlesRouter.get("/", todo);
 
 // Feed Articles
 articlesRouter.get("/feed", todo)

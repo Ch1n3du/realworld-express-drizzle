@@ -4,6 +4,7 @@ import { db } from ".";
 import { articles, article_to_tag, authorCommentsRelations, comments, favorited_articles, followers, tags, users } from "./schema";
 
 import slug from "slug";
+import { getUserIdFromUsername } from "./user";
 
 export const ListArticleParamsSchema = z.object({
     tag: string().optional(),
@@ -109,8 +110,8 @@ export async function updateArticle(
     }
 ) {
     let updatedSlug = isUndefined(updateParams.title)
-        ? slug(updateParams.title!)
-        : undefined;
+        ? undefined
+        : slug(updateParams.title!)
     await db
         .update(articles)
         .set({ ...updateParams, slug: updatedSlug })
@@ -120,11 +121,19 @@ export async function updateArticle(
 }
 
 export async function deleteArticle(articleSlug: string, searcherUsername: string) {
+    await db.delete(comments)
+        .where(eq(comments.article_slug, articleSlug));
+
+    await db.delete(favorited_articles)
+        .where(eq(favorited_articles.article_slug, articleSlug));
+
+    await db
+        .delete(article_to_tag)
+        .where(eq(article_to_tag.article_slug, articleSlug));
+
     await db
         .delete(articles)
         .where(eq(articles.slug, articleSlug));
-
-    await deleteCommentsFromArticle(articleSlug);
 
     return getArticle(articleSlug, searcherUsername);
 }
@@ -149,7 +158,7 @@ export async function getComment(
             updatedAt: comments.updated_at,
             body: comments.body,
             //! Change field later
-            author: comments.comment_author
+            author: comments.comment_author_id
         })
         .from(comments)
         .where(and(
@@ -160,7 +169,18 @@ export async function getComment(
     }
     let commentInfo = commentInfoRows[0]
 
-    let author = await getAuthorInfo(searcherUsername, commentInfo.author);
+    let searcherUserId = await getUserIdFromUsername(searcherUsername);
+    if (searcherUserId === null) {
+        return null;
+    }
+    let authorUserId = await getUserIdFromUsername(commentInfo.author);
+    if (authorUserId === null) {
+        return null;
+    }
+
+
+
+    let author = await getAuthorInfo(searcherUserId!, authorUserId!);
     if (author === null) {
         return null;
     }
@@ -181,7 +201,7 @@ export async function getCommentsForArticle(
             updatedAt: comments.updated_at,
             body: comments.body,
             //! Change field later
-            author: comments.comment_author
+            author: comments.comment_author_id
         })
         .from(comments)
         .where(eq(comments.article_slug, articleSlug));
@@ -191,7 +211,15 @@ export async function getCommentsForArticle(
     let formattedComments = [];
 
     for (const [index, comment] of commentInfoRows.entries()) {
-        let author = await getAuthorInfo(searcherUsername, comment.author);
+        let authorUserId = await getUserIdFromUsername(comment.author);
+        if (authorUserId === null) {
+            return null;
+        }
+        let searcherUserId = await getUserIdFromUsername(searcherUsername);
+        if (searcherUserId === null) {
+            return null;
+        }
+        let author = await getAuthorInfo(searcherUserId!, authorUserId!);
         if (author === null) {
             return null;
         }
@@ -204,7 +232,7 @@ export async function getCommentsForArticle(
 
 
 export async function addCommentToArticle(
-    commentAuthor: string,
+    commentAuthorUsername: string,
     articleSlug: string,
     commentBody: string,
 ): Promise<Comment | null> {
@@ -213,7 +241,7 @@ export async function addCommentToArticle(
         let res = await db
             .insert(comments)
             .values({
-                comment_author: commentAuthor,
+                comment_author_id: (await getUserIdFromUsername(commentAuthorUsername))!,
                 article_slug: articleSlug,
                 body: commentBody
             })
@@ -222,7 +250,7 @@ export async function addCommentToArticle(
             });
         let id: number = res[0].id;
 
-        return getComment(articleSlug, id, commentAuthor);
+        return getComment(articleSlug, id, commentAuthorUsername);
     } catch (_) {
         return null;
     }
@@ -238,12 +266,6 @@ export async function deleteComment(articleSlug: string, commentId: number) {
         );
 }
 
-async function deleteCommentsFromArticle(articleSlug: string) {
-    await db
-        .delete(comments)
-        .where(eq(comments.article_slug, articleSlug));
-}
-
 export async function favoriteArticle(
     articleSlug: string,
     username: string,
@@ -251,7 +273,7 @@ export async function favoriteArticle(
     await db.insert(favorited_articles)
         .values({
             article_slug: articleSlug,
-            username: username,
+            user_id: (await getUserIdFromUsername(username))!,
         });
 
     return getArticle(articleSlug, username)
@@ -264,7 +286,7 @@ export async function unfavoriteArticle(
     db.delete(favorited_articles)
         .where(and(
             eq(favorited_articles.article_slug, articleSlug),
-            eq(favorited_articles.username, username),
+            eq(favorited_articles.user_id, (await getUserIdFromUsername(username))!),
         )
         );
 
@@ -283,53 +305,53 @@ export async function getTags(): Promise<string[]> {
 
 
 const isUndefined = (value: any) => value === undefined;
-export async function listArticles(queryParams: ListArticleParams) {
-    let limit: number = isUndefined(queryParams.limit)
-        ? 20   // default
-        : queryParams.limit!;
-    let offset: number = isUndefined(queryParams.offset)
-        ? 0   // default
-        : queryParams.offset!;
-    // let tagFilter = isUndefined(queryParams.tag)
-    //     ? not(eq(article_to_tag.tag_name, "")) // By default don't filter out anything : eq(article_to_tag.tag_name, queryParams.tag!);
-    //     : eq(article);
-    let authorFilter = isUndefined(queryParams.author)
-        ? not(eq(articles.author, ""))
-        : eq(articles.author, queryParams.author!);
+// export async function listArticles(queryParams: ListArticleParams) {
+//     let limit: number = isUndefined(queryParams.limit)
+//         ? 20   // default
+//         : queryParams.limit!;
+//     let offset: number = isUndefined(queryParams.offset)
+//         ? 0   // default
+//         : queryParams.offset!;
+//     // let tagFilter = isUndefined(queryParams.tag)
+//     //     ? not(eq(article_to_tag.tag_name, "")) // By default don't filter out anything : eq(article_to_tag.tag_name, queryParams.tag!);
+//     //     : eq(article);
+//     let authorFilter = isUndefined(queryParams.author)
+//         ? not(eq(articles.author, ""))
+//         : eq(articles.author, queryParams.author!);
 
-    let articleRows = await db.query.articles.findMany({
-        limit: limit,
-        offset: offset, columns: {
-            slug: true,
-            title: true,
-            //! Change property when mapping
-            author: true,
-            description: true,
-            body: true,
-            created_at: true,
-            updated_at: true,
-        },
-        where: authorFilter,
-        with: {
-            article_to_tag: {
-                columns: {},
-                where: tagFilter
-            },
-            users: {
-                columns: {
-                    username: true,
-                    bio: true,
-                    image: true,
-                    following: true,
-                }
-            }
-        }
-    });
+//     let articleRows = await db.query.articles.findMany({
+//         limit: limit,
+//         offset: offset, columns: {
+//             slug: true,
+//             title: true,
+//             //! Change property when mapping
+//             author: true,
+//             description: true,
+//             body: true,
+//             created_at: true,
+//             updated_at: true,
+//         },
+//         where: authorFilter,
+//         with: {
+//             article_to_tag: {
+//                 columns: {},
+//                 where: tagFilter
+//             },
+//             users: {
+//                 columns: {
+//                     username: true,
+//                     bio: true,
+//                     image: true,
+//                     following: true,
+//                 }
+//             }
+//         }
+//     });
 
-    let results = articleRows.map(async (article) => {
-        let { favorited, favoritesCount } = await getFavoriteInfo(article.slug, article.author)
-    })
-}
+// let results = articleRows.map(async (article) => {
+//     let { favorited, favoritesCount } = await getFavoriteInfo(article.slug, article.author)
+// })
+// }
 
 async function getArticleTagList(articleSlug: string): Promise<string[]> {
     let articleTags = await db
@@ -342,7 +364,7 @@ async function getArticleTagList(articleSlug: string): Promise<string[]> {
     return articleTags.map(({ tag_name }) => tag_name);
 }
 
-async function getAuthorInfo(searcherUsername: string, authorUsername: string): Promise<Author | null> {
+async function getAuthorInfo(searcherUserId: string, authorUserId: string): Promise<Author | null> {
     let authorInfoRows = await db
         .select({
             username: users.username,
@@ -350,7 +372,7 @@ async function getAuthorInfo(searcherUsername: string, authorUsername: string): 
             image: users.image,
         })
         .from(users)
-        .where(eq(users.username, authorUsername));
+        .where(eq(users.user_id, authorUserId));
 
     if (authorInfoRows.length === 0) {
         return null;
@@ -361,8 +383,8 @@ async function getAuthorInfo(searcherUsername: string, authorUsername: string): 
         .select({})
         .from(followers)
         .where(and(
-            eq(followers.follower_username, searcherUsername),
-            eq(followers.followed_username, authorUsername),
+            eq(followers.follower_id, searcherUserId),
+            eq(followers.followed_id, authorUserId),
         ));
     let following: boolean = followingRows.length > 0;
 
@@ -380,7 +402,7 @@ async function getFavoriteInfo(articleSlug: string, username: string) {
         .from(favorited_articles)
         .where(
             and(eq(favorited_articles.article_slug, articleSlug),
-                eq(favorited_articles.username, username)
+                eq(favorited_articles.user_id, (await getUserIdFromUsername(username))!)
             )
         );
     let favoritesCount: number = favoritesRows.length;
@@ -404,7 +426,7 @@ export async function getArticleAuthor(articleSlug: string): Promise<string | nu
 
 export async function getCommentAuthor(articleSlug: string, commentId: number) {
     let authorRows = await db
-        .select({ author: comments.comment_author })
+        .select({ author_id: comments.comment_author_id })
         .from(comments)
         .where(and(
             eq(comments.article_slug, articleSlug),
@@ -416,5 +438,12 @@ export async function getCommentAuthor(articleSlug: string, commentId: number) {
         return null;
     }
 
-    return authorRows[0].author
+    let username = (
+        await db
+            .select({ username: users.username })
+            .from(users)
+            .where(eq(users.user_id, authorRows[0].author_id))
+    )[0].username;
+
+    return username
 }

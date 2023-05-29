@@ -1,5 +1,7 @@
+import { S } from "drizzle-orm/column.d-c31e7ad3";
 import { Request, Response } from "express";
 import { followUser, getProfile, Profile, unfollowUser } from "../db/profile";
+import { getUserIdFromUsername } from "../db/user";
 import { decodeAccesToken, extractAccesToken } from "../utils/auth";
 import { ErrorMessage, notFoundError, validationError } from "../utils/errors";
 

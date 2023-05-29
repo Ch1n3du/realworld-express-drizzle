@@ -3,12 +3,29 @@ import { eq } from "drizzle-orm";
 import { users } from "./schema";
 
 
+export async function getUserIdFromUsername(username: string): Promise<string | null> {
+    let rows = await db.select({
+        user_id: users.user_id,
+    })
+        .from(users)
+        .where(eq(users.username, username));
+
+    if (rows.length === 0) {
+        return null;
+    } else {
+        return rows[0].user_id;
+    }
+}
 export async function insertUser(
     username: string,
     email: string,
     password: string
 ) {
     try {
+        if ((await getUserByUsername(username)) === null) {
+            return null;
+        }
+
         let rows = await db.insert(users)
             .values({
                 username: username,

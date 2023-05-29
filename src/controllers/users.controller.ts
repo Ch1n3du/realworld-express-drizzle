@@ -25,19 +25,17 @@ export async function registerUser(req: Request, res: Response, next: NextFuncti
         return;
     }
 
-    let usernameExists = await db.getUserByUsername(username);
-    if (usernameExists !== null) {
-        errors.validationError(res, `Username '${username}' is already in use`);
-        return;
-    }
-
     let hashedPassword: Buffer = await auth.hashPassword(password);
     const token = auth.generateAccessToken(username);
 
     let user = await db.insertUser(username, email, hashedPassword.toString());
+    if (user !== null) {
+        errors.validationError(res, `Username '${username}' is already in use`);
+        return;
+    }
 
     return res.status(200).json({
-        user: { token: token, ...user }
+        user: { token: token, ...(user!) }
     });
 }
 

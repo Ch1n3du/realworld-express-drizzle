@@ -11,30 +11,31 @@ export const users = pgTable("users", {
     created_at: date("created_at").defaultNow().notNull(),
 });
 
-export const followers = pgTable("followings", {
+export const followings = pgTable("followings", {
     follower_id: uuid("follower_id").primaryKey().notNull(),
     followed_id: uuid("followed_username").notNull()
 })
 
 export const articles = pgTable("articles", {
-    slug: text("id").notNull().primaryKey(),
+    article_id: uuid("article_id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description"),
     body: text("body").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
-    author: text("author").notNull().references(() => users.username),
+    author_id: uuid("author").notNull(),
 });
 
 export const favorited_articles = pgTable("favorited_articles", {
     id: uuid("id").defaultRandom().primaryKey(),
-    article_slug: text("article_slug").references(() => articles.slug),
-    user_id: uuid("user_id").references(() => users.username)
+    article_slug: text("article_slug"),
+    user_id: uuid("user_id")
 });
 
 export const comments = pgTable("comments", {
     comment_id: serial("comment_id").notNull().primaryKey(),
-    article_slug: text("article_slug").notNull().references(() => articles.slug),
+    article_slug: text("article_slug").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
     body: text("body").notNull(),
@@ -47,7 +48,7 @@ export const tags = pgTable("tags", {
 
 export const article_to_tag = pgTable("article_to_tag", {
     tag_name: text("tag_name").primaryKey(),
-    article_slug: text("article_slug").notNull().references(() => articles.slug),
+    article_slug: text("article_slug").notNull(),
 })
 
 // RELATIONS
@@ -59,8 +60,8 @@ export const userArticlesRelations = relations(users, ({ many }) => ({
 }));
 export const articleAuthorRelations = relations(articles, ({ one }) => ({
     author: one(users, {
-        fields: [articles.author],
-        references: [users.username]
+        fields: [articles.author_id],
+        references: [users.user_id]
     })
 }))
 

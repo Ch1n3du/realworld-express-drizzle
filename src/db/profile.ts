@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "."
-import { followers, users } from "./schema"
+import { followings, users } from "./schema"
 import { getUserIdFromUsername } from "./user";
 
 export type Profile = {
@@ -29,10 +29,10 @@ export async function getProfile(searcherUsername: string, targetUsername: strin
 
     let followingRows = await db.select({
     })
-        .from(followers)
+        .from(followings)
         .where(and(
-            eq(followers.follower_id, searcherUserId),
-            eq(followers.followed_id, targetUserId)
+            eq(followings.follower_id, searcherUserId),
+            eq(followings.followed_id, targetUserId)
         ));
     let following = followingRows.length > 0;
 
@@ -50,7 +50,7 @@ export async function followUser(username: string, targetUsername: string) {
     }
 
     await db
-        .insert(followers)
+        .insert(followings)
         .values({
             follower_id: searcherUserId!,
             followed_id: targetUserId!
@@ -71,10 +71,10 @@ export async function unfollowUser(username: string, targetUsername: string): Pr
     }
 
     await db
-        .delete(followers)
+        .delete(followings)
         .where(and(
-            eq(followers.follower_id, searcherUserId),
-            eq(followers.followed_id, targetUserId)
+            eq(followings.follower_id, searcherUserId),
+            eq(followings.followed_id, targetUserId)
         ));
 
     return getProfile(username, targetUsername);

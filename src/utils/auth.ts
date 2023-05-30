@@ -39,6 +39,7 @@ export function extractAccesToken(response: Request): string {
 
 export function decodeAccesToken(token: string): string | null {
     let decodeResult = decode(token);
+
     if (decodeResult === null) {
         return null;
     } else {

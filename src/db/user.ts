@@ -22,7 +22,7 @@ export async function insertUser(
     password: string
 ) {
     try {
-        if ((await getUserByUsername(username)) === null) {
+        if ((await getUserByUsername(username)) !== null) {
             return null;
         }
 

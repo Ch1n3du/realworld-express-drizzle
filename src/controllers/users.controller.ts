@@ -29,7 +29,7 @@ export async function registerUser(req: Request, res: Response, next: NextFuncti
     const token = auth.generateAccessToken(username);
 
     let user = await db.insertUser(username, email, hashedPassword.toString());
-    if (user !== null) {
+    if (user === null) {
         errors.validationError(res, `Username '${username}' is already in use`);
         return;
     }
@@ -66,5 +66,5 @@ export async function loginUser(req: Request, res: Response) {
     let user = (await db.getUserByEmail(email))!;
     let token = auth.generateAccessToken(user.username);
 
-    res.status(200).json({ token, ...user })
+    res.status(200).json({ user: { token, ...user } })
 }

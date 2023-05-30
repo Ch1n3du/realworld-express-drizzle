@@ -7,6 +7,7 @@ import * as db from "../db/user";
 
 export async function getCurrentUser(req: Request, res: Response) {
   let token: string = auth.extractAccesToken(req);
+
   let decodeResult: string | null = auth.decodeAccesToken(token);
   if (decodeResult === null) {
     errors.validationError(res, "Error decoding JWT");
@@ -21,7 +22,7 @@ export async function getCurrentUser(req: Request, res: Response) {
   }
 
   let user = searchResult!;
-  res.status(200).send({ token, ...user })
+  res.status(200).send({ user: { token, ...user } })
 }
 
 export const UpdateUserSchema = z.object({
@@ -51,6 +52,6 @@ export async function updateUser(req: Request, res: Response) {
   let user = await db.updateUser(username, updateArguments);
   res
     .status(200)
-    .json({ token: token, ...user });
+    .json({ user: { token: token, ...user } });
 }
 

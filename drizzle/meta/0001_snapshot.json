@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "1bb4f81d-2067-474e-89a6-19cc949c5b10",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "95f0287f-b05b-4028-80c0-2f5c66e0bf6d",
+  "prevId": "1bb4f81d-2067-474e-89a6-19cc949c5b10",
   "tables": {
     "article_to_tag": {
       "name": "article_to_tag",
@@ -33,7 +33,8 @@
           "name": "article_id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "slug": {
           "name": "slug",

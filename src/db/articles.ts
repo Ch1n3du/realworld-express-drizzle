@@ -1,7 +1,7 @@
 import { and, eq, not } from "drizzle-orm";
 import { number, string, TypeOf, z } from "zod";
 import { db } from ".";
-import { articles, article_to_tag, authorCommentsRelations, comments, favorited_articles, followers, tags, users } from "./schema";
+import { articles, article_to_tag, authorCommentsRelations, comments, favorited_articles, followings, tags, users } from "./schema";
 
 import slug from "slug";
 import { getUserIdFromUsername } from "./user";
@@ -48,7 +48,7 @@ export async function getArticle(
             createdAt: articles.created_at,
             updatedAt: articles.updated_at,
             //! Change field later
-            author: articles.author,
+            author_id: articles.author_id,
         })
         .from(articles)
         .where(eq(articles.slug, articleSlug));
@@ -56,7 +56,7 @@ export async function getArticle(
         return null;
     }
     let articleInfo = articleInfoRows[0];
-    let author: Author = (await getAuthorInfo(searcherUsername, articleInfo.author))!;
+    let author: Author = (await getAuthorInfo(searcherUsername, articleInfo.author_id))!;
     let tagList: string[] = await getArticleTagList(articleSlug);
     let { favorited, favoritesCount } = await getFavoriteInfo(articleSlug, searcherUsername)
 
@@ -84,7 +84,7 @@ export async function createArticle(
         .values({
             slug: slug(params.title),
             title: params.title,
-            author: params.author,
+            author_id: (await getUserIdFromUsername(params.author))!,
             description: params.description,
             body: params.body,
         });
@@ -381,10 +381,10 @@ async function getAuthorInfo(searcherUserId: string, authorUserId: string): Prom
 
     let followingRows = await db
         .select({})
-        .from(followers)
+        .from(followings)
         .where(and(
-            eq(followers.follower_id, searcherUserId),
-            eq(followers.followed_id, authorUserId),
+            eq(followings.follower_id, searcherUserId),
+            eq(followings.followed_id, authorUserId),
         ));
     let following: boolean = followingRows.length > 0;
 
@@ -413,7 +413,7 @@ async function getFavoriteInfo(articleSlug: string, username: string) {
 
 export async function getArticleAuthor(articleSlug: string): Promise<string | null> {
     let authorRows = await db
-        .select({ author: articles.author })
+        .select({ author_id: articles.author_id })
         .from(articles)
         .where(eq(articles.slug, articleSlug));
 
@@ -421,7 +421,16 @@ export async function getArticleAuthor(articleSlug: string): Promise<string | nu
         return null;
     }
 
-    return authorRows[0].author
+    let usernameRows = await db
+        .select({ username: users.username })
+        .from(users)
+        .where(eq(users.user_id, authorRows[0].author_id))
+
+    if (usernameRows.length === 0) {
+        return null;
+    }
+
+    return usernameRows[0].username;
 }
 
 export async function getCommentAuthor(articleSlug: string, commentId: number) {

@@ -72,6 +72,8 @@ export async function createArticle(
     let articleSlug: string = slug(params.title);
     let authorId: string = (await getUserIdFromUsername(username))!;
 
+    console.log(`PARAMS: ${params}`);
+
     await db.insert(articles)
         .values({
             slug: slug(params.title),
@@ -92,9 +94,11 @@ export async function createArticle(
         await db
             .insert(article_to_tag)
             .values(formattedTagList);
-    } catch (_) { }
+    } catch (_) {
+    }
 
-    return getArticle(articleSlug, authorId);
+    let article = await getArticle(articleId, authorId);
+    return article;
 }
 
 export async function updateArticle(

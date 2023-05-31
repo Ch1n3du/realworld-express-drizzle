@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "e9afaceb-35eb-484f-80e9-7926e9feed2c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "938032aa-e6e2-4146-8182-e611f3746b91",
+  "prevId": "e9afaceb-35eb-484f-80e9-7926e9feed2c",
   "tables": {
     "article_to_tag": {
       "name": "article_to_tag",
@@ -82,8 +82,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "author": {
-          "name": "author",
+        "author_id": {
+          "name": "author_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -272,6 +272,8 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {}
+    "columns": {
+      "\"articles\".\"author\"": "\"articles\".\"author_id\""
+    }
   }
 }

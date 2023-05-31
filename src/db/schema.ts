@@ -28,7 +28,7 @@ export const articles = pgTable("articles", {
     body: text("body").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
-    author_id: uuid("author").notNull(),
+    author_id: uuid("author_id").notNull(),
 });
 
 export const favorited_articles = pgTable("favorited_articles", {

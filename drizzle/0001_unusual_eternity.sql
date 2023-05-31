@@ -1,1 +1,0 @@
-ALTER TABLE "articles" ALTER COLUMN "article_id" SET DEFAULT gen_random_uuid();

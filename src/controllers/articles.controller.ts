@@ -5,11 +5,18 @@ import * as errors from "../utils/errors";
 import * as db from "../db/articles";
 import { string, z } from "zod";
 
-// export async function listArticlesController(req: Request, res: Response) {
-//     let queryParams: ListArticleParams = ListArticleParamsSchema.parse(req.query);
+export async function listArticlesController(req: Request, res: Response) {
+    let token: string = auth.extractAccesToken(req);
+    let decodeResult: string | null = auth.decodeAccesToken(token);
+    if (decodeResult === null) {
+        errors.validationError(res, "Error decoding JWT");
+        return;
+    }
+    let username: string = decodeResult!;
+    let queryParams: db.ListArticleParams = db.ListArticleParamsSchema.parse(req.query);
 
-//     let articles = await listArticles(queryParams);
-// }
+    let articles = await db.listArticles(username, queryParams);
+}
 
 export async function getArticleController(req: Request, res: Response) {
     let token: string = auth.extractAccesToken(req);
@@ -20,10 +27,14 @@ export async function getArticleController(req: Request, res: Response) {
     }
     let username: string = decodeResult!;
 
-    let articleSlug = req.params.slug;
-    let dbResult = await db.getArticle(articleSlug, username)
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
+    let dbResult = await db.getArticle(articleId!, username)
     if (dbResult === null) {
-        errors.notFoundError(res, "Article not found.")
+        errors.notFoundError(res, "Article not found")
         return;
     }
     let article = dbResult!;
@@ -52,7 +63,7 @@ export async function createArticleController(req: Request, res: Response) {
     let reqBody = CreateArticleSchema.parse(req.body);
     let params = reqBody.article;
 
-    let dbResult = await db.createArticle(username, { ...params, author: username })
+    let dbResult = await db.createArticle(username, params)
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -78,12 +89,16 @@ export async function updateArticleController(req: Request, res: Response) {
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
 
     let reqBody = UpdateArticleSchema.parse(req.body);
     let updateParams = reqBody.article;
 
-    let authorAuth = await db.getArticleAuthor(articleSlug);
+    let authorAuth = await db.getArticleAuthor(articleId);
     if (authorAuth === null) {
         errors.notFoundError(res, "Article not found");
         return;
@@ -92,7 +107,7 @@ export async function updateArticleController(req: Request, res: Response) {
         errors.unauthorizedError(res, "Not authorized to edit article");
     }
 
-    let dbResult = await db.updateArticle(articleSlug, username, updateParams)
+    let dbResult = await db.updateArticle(articleId, username, updateParams)
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -110,9 +125,13 @@ export async function deleteArticleController(req: Request, res: Response) {
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
 
-    let authorAuth = await db.getArticleAuthor(articleSlug);
+    let authorAuth = await db.getArticleAuthor(articleId);
     if (authorAuth === null) {
         errors.notFoundError(res, "Article not found");
         return;
@@ -121,7 +140,7 @@ export async function deleteArticleController(req: Request, res: Response) {
         errors.unauthorizedError(res, "Not authorized to delete article");
     }
 
-    let dbResult = await db.deleteArticle(articleSlug, username);
+    let dbResult = await db.deleteArticle(articleId, username);
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -145,11 +164,15 @@ export async function addCommentToArticleController(req: Request, res: Response)
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
 
     let commentBody = AddCommentSchema.parse(req.body).comment.body;
 
-    let dbResult = await db.addCommentToArticle(username, articleSlug, commentBody);
+    let dbResult = await db.addCommentToArticle(username, articleId, commentBody);
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -167,11 +190,14 @@ export async function getCommentsFromArticleController(req: Request, res: Respon
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
-
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
     let commentBody = AddCommentSchema.parse(req.body).comment.body;
 
-    let dbResult = await db.getCommentsForArticle(articleSlug, username);
+    let dbResult = await db.getCommentsForArticle(articleId, username);
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -189,10 +215,15 @@ export async function deleteCommentController(req: Request, res: Response) {
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
+
     let commentId: number = Number(req.params.id);
 
-    let authorAuth = await db.getArticleAuthor(articleSlug);
+    let authorAuth = await db.getArticleAuthor(articleId);
     if (authorAuth === null) {
         errors.notFoundError(res, "Author not found");
         return;
@@ -201,7 +232,7 @@ export async function deleteCommentController(req: Request, res: Response) {
         errors.unauthorizedError(res, "Not authorized to delete comment");
     }
 
-    await db.deleteComment(articleSlug, commentId);
+    await db.deleteComment(articleId, commentId);
 
     res.status(200);
 }
@@ -214,9 +245,13 @@ export async function favoriteArticleController(req: Request, res: Response) {
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
 
-    let dbResult = await db.favoriteArticle(articleSlug, username);
+    let dbResult = await db.favoriteArticle(articleId, username);
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -234,9 +269,13 @@ export async function unfavoriteArticleController(req: Request, res: Response) {
         return;
     }
     let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
+    let articleId = await db.getArticleIdFromSlug(req.params.slug);
+    if (articleId === null) {
+        errors.notFoundError(res, "Article not found");
+        return;
+    }
 
-    let dbResult = await db.unfavoriteArticle(articleSlug, username);
+    let dbResult = await db.unfavoriteArticle(articleId, username);
     if (dbResult === null) {
         errors.notFoundError(res, "Article not found.")
         return;
@@ -249,17 +288,7 @@ export async function unfavoriteArticleController(req: Request, res: Response) {
 
 
 export async function getTagsController(req: Request, res: Response) {
-    let token: string = auth.extractAccesToken(req);
-    let decodeResult: string | null = auth.decodeAccesToken(token);
-    if (decodeResult === null) {
-        errors.validationError(res, "Error decoding JWT");
-        return;
-    }
-    let username: string = decodeResult!;
-    let articleSlug: string = req.params.slug;
-
     let tags = await db.getTags();
-
     res.status(200).json({ tags });
 }
 

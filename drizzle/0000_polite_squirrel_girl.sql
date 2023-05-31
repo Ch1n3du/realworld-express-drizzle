@@ -1,18 +1,21 @@
 CREATE EXTENSION pgcrypto;
+
 CREATE TABLE IF NOT EXISTS "article_to_tag" (
-	"tag_name" text PRIMARY KEY NOT NULL,
+	"tag_name" text,
 	"article_slug" text NOT NULL
 );
+--> statement-breakpoint
+ALTER TABLE "article_to_tag" ADD CONSTRAINT "article_to_tag_tag_name_article_slug" PRIMARY KEY("tag_name","article_slug");
 
 CREATE TABLE IF NOT EXISTS "articles" (
-	"article_id" uuid PRIMARY KEY NOT NULL,
+	"article_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"slug" text NOT NULL,
 	"title" text NOT NULL,
 	"description" text,
 	"body" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"author" text NOT NULL
+	"author" uuid NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "comments" (
@@ -25,15 +28,18 @@ CREATE TABLE IF NOT EXISTS "comments" (
 );
 
 CREATE TABLE IF NOT EXISTS "favorited_articles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"article_slug" text,
 	"user_id" uuid
 );
+--> statement-breakpoint
+ALTER TABLE "favorited_articles" ADD CONSTRAINT "favorited_articles_article_slug_user_id" PRIMARY KEY("article_slug","user_id");
 
 CREATE TABLE IF NOT EXISTS "followings" (
-	"follower_id" uuid PRIMARY KEY NOT NULL,
+	"follower_id" uuid NOT NULL,
 	"followed_username" uuid NOT NULL
 );
+--> statement-breakpoint
+ALTER TABLE "followings" ADD CONSTRAINT "followings_follower_id_followed_username" PRIMARY KEY("follower_id","followed_username");
 
 CREATE TABLE IF NOT EXISTS "tags" (
 	"tag_name" text PRIMARY KEY NOT NULL

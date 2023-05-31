@@ -13,7 +13,8 @@ export async function getUserIdFromUsername(username: string): Promise<string | 
     if (rows.length === 0) {
         return null;
     } else {
-        return rows[0].user_id;
+        let userId = rows[0].user_id;
+        return userId;
     }
 }
 export async function insertUser(

@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "1bb4f81d-2067-474e-89a6-19cc949c5b10",
+  "id": "f76853e7-41c3-4005-934d-19d2f6c71b7d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "article_to_tag": {
@@ -11,8 +11,8 @@
         "tag_name": {
           "name": "tag_name",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true
+          "primaryKey": false,
+          "notNull": false
         },
         "article_slug": {
           "name": "article_slug",
@@ -23,7 +23,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "article_to_tag_tag_name_article_slug": {
+          "name": "article_to_tag_tag_name_article_slug",
+          "columns": [
+            "tag_name",
+            "article_slug"
+          ]
+        }
+      }
     },
     "articles": {
       "name": "articles",
@@ -33,7 +41,8 @@
           "name": "article_id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "slug": {
           "name": "slug",
@@ -75,7 +84,7 @@
         },
         "author": {
           "name": "author",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         }
@@ -135,13 +144,6 @@
       "name": "favorited_articles",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
         "article_slug": {
           "name": "article_slug",
           "type": "text",
@@ -157,7 +159,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "favorited_articles_article_slug_user_id": {
+          "name": "favorited_articles_article_slug_user_id",
+          "columns": [
+            "article_slug",
+            "user_id"
+          ]
+        }
+      }
     },
     "followings": {
       "name": "followings",
@@ -166,7 +176,7 @@
         "follower_id": {
           "name": "follower_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "followed_username": {
@@ -178,7 +188,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "followings_follower_id_followed_username": {
+          "name": "followings_follower_id_followed_username",
+          "columns": [
+            "follower_id",
+            "followed_username"
+          ]
+        }
+      }
     },
     "tags": {
       "name": "tags",

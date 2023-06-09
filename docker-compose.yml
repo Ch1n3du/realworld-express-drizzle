@@ -4,11 +4,13 @@ services:
     image: postgres:10.3
     restart: always
     environment:
-      - POSTGRES_USER=ch1n3du
+      # NOTE: If changed update "DB_URL" in your ".env" file.
+      - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
       - '5432:5432'
+    command: command
 volumes:
   postgres:

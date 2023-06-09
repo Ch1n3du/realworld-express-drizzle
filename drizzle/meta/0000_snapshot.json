@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "1bb4f81d-2067-474e-89a6-19cc949c5b10",
+  "id": "e9afaceb-35eb-484f-80e9-7926e9feed2c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "article_to_tag": {
@@ -11,19 +11,27 @@
         "tag_name": {
           "name": "tag_name",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true
+          "primaryKey": false,
+          "notNull": false
         },
-        "article_slug": {
-          "name": "article_slug",
-          "type": "text",
+        "article_id": {
+          "name": "article_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "article_to_tag_tag_name_article_id": {
+          "name": "article_to_tag_tag_name_article_id",
+          "columns": [
+            "tag_name",
+            "article_id"
+          ]
+        }
+      }
     },
     "articles": {
       "name": "articles",
@@ -33,7 +41,8 @@
           "name": "article_id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "slug": {
           "name": "slug",
@@ -75,7 +84,7 @@
         },
         "author": {
           "name": "author",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         }
@@ -94,9 +103,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "article_slug": {
-          "name": "article_slug",
-          "type": "text",
+        "article_id": {
+          "name": "article_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -135,16 +144,9 @@
       "name": "favorited_articles",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
+        "article_id": {
+          "name": "article_id",
           "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "article_slug": {
-          "name": "article_slug",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -157,7 +159,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "favorited_articles_article_id_user_id": {
+          "name": "favorited_articles_article_id_user_id",
+          "columns": [
+            "article_id",
+            "user_id"
+          ]
+        }
+      }
     },
     "followings": {
       "name": "followings",
@@ -166,7 +176,7 @@
         "follower_id": {
           "name": "follower_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "followed_username": {
@@ -178,7 +188,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {}
+      "compositePrimaryKeys": {
+        "followings_follower_id_followed_username": {
+          "name": "followings_follower_id_followed_username",
+          "columns": [
+            "follower_id",
+            "followed_username"
+          ]
+        }
+      }
     },
     "tags": {
       "name": "tags",

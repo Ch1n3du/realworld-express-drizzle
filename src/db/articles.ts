@@ -6,15 +6,6 @@ import { articles, article_to_tag, authorCommentsRelations, comments, favorited_
 import slug from "slug";
 import { getUserIdFromUsername } from "./user";
 
-export const ListArticleParamsSchema = z.object({
-    tag: string().optional(),
-    author: string().optional(),
-    favorited: string().optional(),
-    limit: number().optional(),
-    offset: number().optional(),
-});
-export type ListArticleParams = TypeOf<typeof ListArticleParamsSchema>;
-
 type Article = {
     slug: string,
     title: string,
@@ -36,8 +27,8 @@ type Author = {
 }
 
 export async function getArticle(
-    articleSlug: string,
-    searcherUsername: string,
+    articleId: string,
+    searcherUserId: string,
 ): Promise<Article | null> {
     let articleInfoRows = await db
         .select({
@@ -51,14 +42,14 @@ export async function getArticle(
             author_id: articles.author_id,
         })
         .from(articles)
-        .where(eq(articles.slug, articleSlug));
+        .where(eq(articles.article_id, articleId));
     if (articleInfoRows.length < 1) {
         return null;
     }
     let articleInfo = articleInfoRows[0];
-    let author: Author = (await getAuthorInfo(searcherUsername, articleInfo.author_id))!;
-    let tagList: string[] = await getArticleTagList(articleSlug);
-    let { favorited, favoritesCount } = await getFavoriteInfo(articleSlug, searcherUsername)
+    let author: Author = (await getAuthorInfo(searcherUserId, articleInfo.author_id))!;
+    let tagList: string[] = await getArticleTagList(articleId);
+    let { favorited, favoritesCount } = await getFavoriteInfo(articleId, searcherUserId)
 
     return {
         ...articleInfo,
@@ -70,38 +61,48 @@ export async function getArticle(
 }
 
 export async function createArticle(
-    searcherUsername: string,
+    username: string,
     params: {
         title: string,
-        author: string,
         description: string,
         body: string
         tagList?: string[]
     }
 ): Promise<Article | null> {
     let articleSlug: string = slug(params.title);
+    let authorId: string = (await getUserIdFromUsername(username))!;
+
+    console.log(`PARAMS: ${params}`);
+
     await db.insert(articles)
         .values({
             slug: slug(params.title),
             title: params.title,
-            author_id: (await getUserIdFromUsername(params.author))!,
+            author_id: authorId,
             description: params.description,
             body: params.body,
         });
+
+    let articleId = (await getArticleIdFromSlug(articleSlug))!;
     let tagList = params.tagList || [];
     let formattedTagList = tagList
         .map((tag_name) => {
-            return { tag_name, article_slug: articleSlug };
+            return { tag_name, article_id: articleId };
         });
-    await db
-        .insert(article_to_tag)
-        .values(formattedTagList);
 
-    return getArticle(articleSlug, searcherUsername);
+    try {
+        await db
+            .insert(article_to_tag)
+            .values(formattedTagList);
+    } catch (_) {
+    }
+
+    let article = await getArticle(articleId, authorId);
+    return article;
 }
 
 export async function updateArticle(
-    articleSlug: string,
+    articleId: string,
     searcherUsername: string,
     updateParams: {
         title?: string,
@@ -115,27 +116,26 @@ export async function updateArticle(
     await db
         .update(articles)
         .set({ ...updateParams, slug: updatedSlug })
-        .where(eq(articles.slug, articleSlug));
+        .where(eq(articles.article_id, articleId));
+    let userId = (await getUserIdFromUsername(searcherUsername))!
 
-    return getArticle(articleSlug, searcherUsername);
+    return getArticle(articleId, userId);
 }
 
-export async function deleteArticle(articleSlug: string, searcherUsername: string) {
+export async function deleteArticle(articleId: string, searcherUsername: string) {
+    let article = getArticle(articleId, (await getUserIdFromUsername(searcherUsername))!);
     await db.delete(comments)
-        .where(eq(comments.article_slug, articleSlug));
-
+        .where(eq(comments.article_id, articleId));
     await db.delete(favorited_articles)
-        .where(eq(favorited_articles.article_slug, articleSlug));
-
+        .where(eq(favorited_articles.article_id, articleId));
     await db
         .delete(article_to_tag)
-        .where(eq(article_to_tag.article_slug, articleSlug));
-
+        .where(eq(article_to_tag.article_id, articleId));
     await db
         .delete(articles)
-        .where(eq(articles.slug, articleSlug));
+        .where(eq(articles.article_id, articleId));
 
-    return getArticle(articleSlug, searcherUsername);
+    return article;
 }
 
 type Comment = {
@@ -147,7 +147,7 @@ type Comment = {
 }
 
 export async function getComment(
-    articleSlug: string,
+    articleId: string,
     commentId: number,
     searcherUsername: string,
 ): Promise<Comment | null> {
@@ -162,8 +162,9 @@ export async function getComment(
         })
         .from(comments)
         .where(and(
-            eq(comments.article_slug, articleSlug),
+            eq(comments.article_id, articleId),
             eq(comments.comment_id, commentId)));
+
     if (commentInfoRows.length === 0) {
         return null;
     }
@@ -178,8 +179,6 @@ export async function getComment(
         return null;
     }
 
-
-
     let author = await getAuthorInfo(searcherUserId!, authorUserId!);
     if (author === null) {
         return null;
@@ -191,7 +190,7 @@ export async function getComment(
 
 
 export async function getCommentsForArticle(
-    articleSlug: string,
+    articleId: string,
     searcherUsername: string,
 ): Promise<Comment[] | null> {
     let commentInfoRows = await db
@@ -204,7 +203,7 @@ export async function getCommentsForArticle(
             author: comments.comment_author_id
         })
         .from(comments)
-        .where(eq(comments.article_slug, articleSlug));
+        .where(eq(comments.article_id, articleId));
     if (commentInfoRows.length === 0) {
         return null;
     }
@@ -233,7 +232,7 @@ export async function getCommentsForArticle(
 
 export async function addCommentToArticle(
     commentAuthorUsername: string,
-    articleSlug: string,
+    articleId: string,
     commentBody: string,
 ): Promise<Comment | null> {
     try {
@@ -242,7 +241,7 @@ export async function addCommentToArticle(
             .insert(comments)
             .values({
                 comment_author_id: (await getUserIdFromUsername(commentAuthorUsername))!,
-                article_slug: articleSlug,
+                article_id: articleId,
                 body: commentBody
             })
             .returning({
@@ -250,47 +249,47 @@ export async function addCommentToArticle(
             });
         let id: number = res[0].id;
 
-        return getComment(articleSlug, id, commentAuthorUsername);
+        return getComment(articleId, id, commentAuthorUsername);
     } catch (_) {
         return null;
     }
 }
 
-export async function deleteComment(articleSlug: string, commentId: number) {
+export async function deleteComment(articleId: string, commentId: number) {
     await db
         .delete(comments)
         .where(and(
             eq(comments.comment_id, commentId),
-            eq(comments.article_slug, articleSlug),
+            eq(comments.article_id, articleId),
         )
         );
 }
 
 export async function favoriteArticle(
-    articleSlug: string,
+    articleId: string,
     username: string,
 ): Promise<Article | null> {
     await db.insert(favorited_articles)
         .values({
-            article_slug: articleSlug,
+            article_id: articleId,
             user_id: (await getUserIdFromUsername(username))!,
         });
 
-    return getArticle(articleSlug, username)
+    return getArticle(articleId, username)
 }
 
 export async function unfavoriteArticle(
-    articleSlug: string,
+    articleId: string,
     username: string,
 ): Promise<Article | null> {
     db.delete(favorited_articles)
         .where(and(
-            eq(favorited_articles.article_slug, articleSlug),
+            eq(favorited_articles.article_id, articleId),
             eq(favorited_articles.user_id, (await getUserIdFromUsername(username))!),
         )
         );
 
-    return getArticle(articleSlug, username)
+    return getArticle(articleId, username)
 }
 
 export async function getTags(): Promise<string[]> {
@@ -301,67 +300,104 @@ export async function getTags(): Promise<string[]> {
     return rawTags.map(({ tagName }) => tagName)
 }
 
-
-
-
 const isUndefined = (value: any) => value === undefined;
-// export async function listArticles(queryParams: ListArticleParams) {
-//     let limit: number = isUndefined(queryParams.limit)
-//         ? 20   // default
-//         : queryParams.limit!;
-//     let offset: number = isUndefined(queryParams.offset)
-//         ? 0   // default
-//         : queryParams.offset!;
-//     // let tagFilter = isUndefined(queryParams.tag)
-//     //     ? not(eq(article_to_tag.tag_name, "")) // By default don't filter out anything : eq(article_to_tag.tag_name, queryParams.tag!);
-//     //     : eq(article);
-//     let authorFilter = isUndefined(queryParams.author)
-//         ? not(eq(articles.author, ""))
-//         : eq(articles.author, queryParams.author!);
 
-//     let articleRows = await db.query.articles.findMany({
-//         limit: limit,
-//         offset: offset, columns: {
-//             slug: true,
-//             title: true,
-//             //! Change property when mapping
-//             author: true,
-//             description: true,
-//             body: true,
-//             created_at: true,
-//             updated_at: true,
-//         },
-//         where: authorFilter,
-//         with: {
-//             article_to_tag: {
-//                 columns: {},
-//                 where: tagFilter
-//             },
-//             users: {
-//                 columns: {
-//                     username: true,
-//                     bio: true,
-//                     image: true,
-//                     following: true,
-//                 }
-//             }
-//         }
-//     });
+export const ListArticleParamsSchema = z.object({
+    tag: string().optional(),
+    author: string().optional(),
+    favorited: string().optional(),
+    limit: number().optional(),
+    offset: number().optional(),
+});
+export type ListArticleParams = TypeOf<typeof ListArticleParamsSchema>;
 
-// let results = articleRows.map(async (article) => {
-//     let { favorited, favoritesCount } = await getFavoriteInfo(article.slug, article.author)
-// })
-// }
+type ArticleList = {
+    articles: Article[],
+    articlesCount: number,
+}
 
-async function getArticleTagList(articleSlug: string): Promise<string[]> {
+export async function listArticles(
+    searcherUserId: string,
+    queryParams: ListArticleParams
+): Promise<ArticleList | null> {
+    let limit: number = isUndefined(queryParams.limit)
+        ? 20   // default
+        : queryParams.limit!;
+    let offset: number = isUndefined(queryParams.offset)
+        ? 0   // default
+        : queryParams.offset!;
+    let tagFilter = isUndefined(queryParams.tag)
+        ? not(eq(article_to_tag.tag_name, "")) // By default don't filter out anything : eq(article_to_tag.tag_name, queryParams.tag!);
+        : eq(article_to_tag.tag_name, queryParams.tag!);
+    let authorFilter = isUndefined(queryParams.author)
+        ? not(eq(articles.author_id, ""))
+        : eq(articles.author_id, (await getUserIdFromUsername(queryParams.author!))!);
+
+    let articleRows = await db.query.articles.findMany({
+        limit: limit,
+        offset: offset,
+        columns: {
+            slug: true,
+            title: true,
+            description: true,
+            body: true,
+            created_at: true,
+            updated_at: true,
+            author_id: true,
+            article_id: true,
+        },
+        where: authorFilter,
+        with: {
+            article_to_tag: {
+                columns: {},
+                where: tagFilter
+            },
+            users: {
+                columns: {
+                    username: true,
+                    bio: true,
+                    image: true,
+                    following: true,
+                }
+            }
+        }
+    });
+
+    let formattedArticles: Article[] = [];
+    for (const article of articleRows) {
+
+        let { favorited, favoritesCount } = await getFavoriteInfo(article.slug, article.author_id)
+        let authorInfo: Author = (await getAuthorInfo(searcherUserId, article.author_id))!;
+        let tagList: string[] = await getArticleTagList(article.article_id);
+        let formattedArticle: Article = {
+            slug: article.slug,
+            title: article.title,
+            description: article.description,
+            body: article.body,
+            tagList: tagList,
+            createdAt: article.created_at,
+            updatedAt: article.updated_at,
+            favorited: favorited,
+            favoritesCount: favoritesCount,
+            author: authorInfo,
+        };
+        formattedArticles.push(formattedArticle);
+    }
+
+    return { articles: formattedArticles, articlesCount: formattedArticles.length };
+}
+
+async function getArticleTagList(articleId: string): Promise<string[]> {
     let articleTags = await db
         .select({
             tag_name: article_to_tag.tag_name,
         })
         .from(article_to_tag)
-        .where(eq(article_to_tag.article_slug, articleSlug));
+        .where(eq(article_to_tag.article_id, articleId));
 
-    return articleTags.map(({ tag_name }) => tag_name);
+    return articleTags
+        .filter(({ tag_name }) => tag_name !== null)
+        .map(({ tag_name }) => tag_name!);
 }
 
 async function getAuthorInfo(searcherUserId: string, authorUserId: string): Promise<Author | null> {
@@ -391,18 +427,18 @@ async function getAuthorInfo(searcherUserId: string, authorUserId: string): Prom
     return { following: following, ...authorInfo };
 }
 
-async function getFavoriteInfo(articleSlug: string, username: string) {
+async function getFavoriteInfo(articleId: string, userId: string) {
     let favoritesRows = await db
         .select({ username: favorited_articles })
         .from(favorited_articles)
-        .where(eq(favorited_articles.article_slug, articleSlug));
+        .where(eq(favorited_articles.article_id, articleId));
 
     let favoritedRows = await db
         .select({ username: favorited_articles })
         .from(favorited_articles)
         .where(
-            and(eq(favorited_articles.article_slug, articleSlug),
-                eq(favorited_articles.user_id, (await getUserIdFromUsername(username))!)
+            and(eq(favorited_articles.article_id, articleId),
+                eq(favorited_articles.user_id, userId)
             )
         );
     let favoritesCount: number = favoritesRows.length;
@@ -411,11 +447,11 @@ async function getFavoriteInfo(articleSlug: string, username: string) {
     return { favorited, favoritesCount };
 }
 
-export async function getArticleAuthor(articleSlug: string): Promise<string | null> {
+export async function getArticleAuthor(articleId: string): Promise<string | null> {
     let authorRows = await db
         .select({ author_id: articles.author_id })
         .from(articles)
-        .where(eq(articles.slug, articleSlug));
+        .where(eq(articles.article_id, articleId));
 
     if (authorRows.length === 0) {
         return null;
@@ -433,12 +469,12 @@ export async function getArticleAuthor(articleSlug: string): Promise<string | nu
     return usernameRows[0].username;
 }
 
-export async function getCommentAuthor(articleSlug: string, commentId: number) {
+export async function getCommentAuthor(articleId: string, commentId: number) {
     let authorRows = await db
         .select({ author_id: comments.comment_author_id })
         .from(comments)
         .where(and(
-            eq(comments.article_slug, articleSlug),
+            eq(comments.article_id, articleId),
             eq(comments.comment_id, commentId)
         )
         );
@@ -455,4 +491,17 @@ export async function getCommentAuthor(articleSlug: string, commentId: number) {
     )[0].username;
 
     return username
+}
+
+export async function getArticleIdFromSlug(articleSlug: string): Promise<string | null> {
+    let articleRows = await db
+        .select({
+            articleId: articles.article_id
+        })
+        .from(articles)
+        .where(eq(articles.slug, articleSlug));
+    if (articleRows.length < 1) {
+        return null;
+    }
+    return articleRows[0].articleId;
 }

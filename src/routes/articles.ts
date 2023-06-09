@@ -6,7 +6,7 @@ const articlesRouter = Router();
 const todo = async () => "TODO";
 
 // List articles
-articlesRouter.get("/", todo);
+articlesRouter.get("/", getArticleController);
 
 // Feed Articles
 articlesRouter.get("/feed", todo)
